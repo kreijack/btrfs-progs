@@ -38,6 +38,8 @@
 #include <linux/kdev_t.h>
 #include <limits.h>
 #include <blkid/blkid.h>
+#include <sys/vfs.h>
+
 #include "kerncompat.h"
 #include "radix-tree.h"
 #include "ctree.h"
@@ -2107,4 +2109,15 @@ int lookup_ino_rootid(int fd, u64 *rootid)
 	*rootid = args.treeid;
 
 	return 0;
+}
+
+u64 disk_size(char *path)
+{
+	struct statfs	sfs;
+
+	if (statfs(path, &sfs) < 0)
+		return 0;
+	else
+		return sfs.f_bsize * sfs.f_blocks;
+
 }
