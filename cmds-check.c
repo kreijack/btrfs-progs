@@ -50,6 +50,7 @@ static u64 data_bytes_referenced = 0;
 static int found_old_backref = 0;
 static LIST_HEAD(duplicate_extents);
 static int repair = 0;
+static int no_holes = 0;
 
 struct extent_backref {
 	struct list_head list;
@@ -443,8 +444,9 @@ static void maybe_free_inode_rec(struct cache_tree *inode_cache,
 			rec->errors |= I_ERR_FILE_NBYTES_WRONG;
 		if (rec->extent_start == (u64)-1 || rec->extent_start > 0)
 			rec->first_extent_gap = 0;
-		if (rec->nlink > 0 && (rec->extent_end < rec->isize ||
-		    rec->first_extent_gap < rec->isize))
+		if (rec->nlink > 0 && !no_holes &&
+		    (rec->extent_end < rec->isize ||
+		     rec->first_extent_gap < rec->isize))
 			rec->errors |= I_ERR_FILE_EXTENT_DISCOUNT;
 	}
 
@@ -6155,6 +6157,14 @@ int cmd_check(int argc, char **argv)
 	if (ret)
 		goto out;
 
+	/*
+	 * We used to have to have these hole extents in between our real
+	 * extents so if we don't have this flag set we need to make sure there
+	 * are no gaps in the file extents for inodes, otherwise we can just
+	 * ignore it when this happens.
+	 */
+	no_holes = btrfs_fs_incompat(root->fs_info,
+				     BTRFS_FEATURE_INCOMPAT_NO_HOLES);
 	fprintf(stderr, "checking fs roots\n");
 	ret = check_fs_roots(root, &root_cache);
 	if (ret)
