@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Just common functions
+
+RESULTS="fsck-tests-results.txt"
+
+_fail()
+{
+	echo "$*" | tee -a fsck-tests-results.txt
+	exit 1
+}
+

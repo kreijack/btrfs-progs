@@ -7,26 +7,24 @@
 
 here=`pwd`
 
-_fail()
-{
-	echo "$*" | tee -a fsck-tests-results.txt
-	exit 1
-}
+. ./tests/common
 
-rm -f fsck-tests-results.txt
+rm -f $RESULTS
 
 for i in $(find $here/tests/fsck-tests -name '*.img')
 do
 	echo "     [TEST]    $(basename $i)"
-	echo "testing image $i" >> fsck-tests-results.txt
-	$here/btrfs-image -r $i test.img >> fsck-tests-results.txt 2>&1 \
-		|| _fail "restore failed"
-	$here/btrfsck test.img >> fsck-test-results.txt 2>&1
+	echo "testing image $i" >> $RESULTS
+	$here/btrfs-image -r $i test.img >> $RESULTS 2>&1 || \
+		_fail "restore failed"
+	$here/btrfsck test.img >> $RESULTS 2>&1
 	[ $? -eq 0 ] && _fail "btrfsck should have detected corruption"
 
-	$here/btrfsck --repair test.img >> fsck-test-results.txt 2>&1 || \
+	$here/btrfsck --repair test.img >> $RESULTS 2>&1 || \
 		_fail "btrfsck should have repaired the image"
 
-	$here/btrfsck test.img >> fsck-test-results.txt 2>&1 || \
+	$here/btrfsck test.img >> $RESULTS 2>&1 || \
 		_fail "btrfsck did not correct corruption"
 done
+
+$here/tests/test-init-extent-tree.sh
