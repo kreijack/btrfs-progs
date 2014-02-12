@@ -97,4 +97,6 @@ int btrfs_scan_lblkid(int update_kernel);
 int get_btrfs_mount(const char *dev, char *mp, size_t mp_size);
 
 u64 disk_size(char *path);
+int get_device_info(int fd, u64 devid,
+		struct btrfs_ioctl_dev_info_args *di_args);
 #endif
