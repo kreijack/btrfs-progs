@@ -48,7 +48,7 @@ MAKEOPTS = --no-print-directory Q=$(Q)
 
 progs = mkfs.btrfs btrfs-debug-tree btrfsck \
 	btrfs btrfs-map-logical btrfs-image btrfs-zero-log btrfs-convert \
-	btrfs-find-root btrfstune btrfs-show-super
+	btrfs-find-root btrfstune btrfs-show-super mount.btrfs
 
 progs_extra = btrfs-corrupt-block btrfs-fragments btrfs-calc-size \
 	      btrfs-select-super
@@ -238,6 +238,12 @@ quick-test: $(objects) $(libs) quick-test.o
 ioctl-test: $(objects) $(libs) ioctl-test.o
 	@echo "    [LD]     $@"
 	$(Q)$(CC) $(CFLAGS) -o ioctl-test $(objects) ioctl-test.o $(LDFLAGS) $(LIBS)
+
+mount.btrfs: btrfs-mount.o btrfs-mount-find-disks.o crc32c.o utils.o
+	@echo "    [LD]     $@"
+	$(Q)$(CC) $(CFLAGS) -o mount.btrfs -lmount -lblkid -luuid \
+		crc32c.o \
+		btrfs-mount.o btrfs-mount-find-disks.o $(LDFLAGS) 
 
 send-test: $(objects) $(libs) send-test.o
 	@echo "    [LD]     $@"
