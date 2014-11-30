@@ -1,0 +1,9 @@
+FIRSTDEV=/dev/vdb
+SECONDDEV=/dev/vdc
+THIRDDEV=/dev/vdd
+VGNAME=vgtest2
+LVNAME=lvtest2
+MNTPNT=/mnt/btrfs1
+LVSIZE=10G
+REMOVABLEDISK=/dev/sda
+
