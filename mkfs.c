@@ -1229,6 +1229,21 @@ static void process_fs_features(u64 flags)
 	}
 }
 
+static void print_fs_features(u64 flags)
+{
+	int i;
+	int first = 1;
+
+	for (i = 0; i < ARRAY_SIZE(mkfs_features); i++) {
+		if (flags & mkfs_features[i].flag) {
+			if (!first)
+				printf(", %s",mkfs_features[i].name);
+			else
+				printf("%s",mkfs_features[i].name);
+			first=0;
+		}
+	}
+}
 
 /*
  * Return NULL if all features were parsed fine, otherwise return the name of
@@ -1249,13 +1264,43 @@ static char* parse_fs_features(char *namelist, u64 *flags)
 	return NULL;
 }
 
+static void list_all_devices(struct btrfs_root *root)
+{
+	struct btrfs_fs_devices *fs_devices;
+	struct btrfs_device *device;
+	int number_of_devices = 0;
+	u64 total_block_count = 0;
+
+	fs_devices = root->fs_info->fs_devices;
+
+	list_for_each_entry(device, &fs_devices->devices, dev_list)
+		number_of_devices++;
+
+	printf("  Number of devices:\t%d\n", number_of_devices);
+	printf("    UUID                                  ID    SIZE    PATH\n");
+	printf("    ------------------------------------  --  --------- -----------\n");
+	list_for_each_entry_reverse(device, &fs_devices->devices, dev_list) {
+		char dev_uuid[BTRFS_UUID_UNPARSED_SIZE];
+
+		uuid_unparse(device->uuid, dev_uuid);
+		printf("    %s %3llu %10s %s\n",
+			dev_uuid, device->devid,
+			pretty_size(device->total_bytes),
+			device->name);
+		total_block_count += device->total_bytes;
+	}
+
+	printf("\n");
+	printf("  Total devices size:                        %10s\n",
+		pretty_size(total_block_count));
+}
+
 int main(int ac, char **av)
 {
 	char *file;
 	struct btrfs_root *root;
 	struct btrfs_trans_handle *trans;
 	char *label = NULL;
-	char *first_file;
 	u64 block_count = 0;
 	u64 dev_block_count = 0;
 	u64 blocks[7];
@@ -1529,9 +1574,11 @@ int main(int ac, char **av)
 		exit(1);
 	}
 
-	/* if we are here that means all devs are good to btrfsify */
-	printf("%s\n", PACKAGE_STRING);
-	printf("See %s for more information.\n\n", PACKAGE_URL);
+	if (verbose) {
+		/* if we are here that means all devs are good to btrfsify */
+		printf("%s\n", PACKAGE_STRING);
+		printf("See %s for more information.\n\n", PACKAGE_URL);
+	}
 
 	dev_cnt--;
 
@@ -1547,7 +1594,6 @@ int main(int ac, char **av)
 				strerror(errno));
 			exit(1);
 		}
-		first_file = file;
 		ret = btrfs_prepare_device(fd, file, zero_end, &dev_block_count,
 					   block_count, &mixed, discard);
 		if (ret) {
@@ -1565,7 +1611,6 @@ int main(int ac, char **av)
 			exit(1);
 		}
 
-		first_file = file;
 		source_dir_size = size_sourcedir(source_dir, sectorsize,
 					     &num_of_meta_chunks, &size_of_data);
 		if(block_count < source_dir_size)
@@ -1603,7 +1648,8 @@ int main(int ac, char **av)
 		features |= BTRFS_FEATURE_INCOMPAT_RAID56;
 	}
 
-	process_fs_features(features);
+	if (verbose)
+		process_fs_features(features);
 
 	ret = make_btrfs(fd, file, label, fs_uuid, blocks, dev_block_count,
 			 nodesize, leafsize,
@@ -1684,11 +1730,6 @@ raid_groups:
 	ret = create_data_reloc_tree(trans, root);
 	BUG_ON(ret);
 
-	printf("fs created label %s on %s\n\tnodesize %u leafsize %u "
-	    "sectorsize %u size %s\n",
-	    label, first_file, nodesize, leafsize, sectorsize,
-	    pretty_size(btrfs_super_total_bytes(root->fs_info->super_copy)));
-
 	btrfs_commit_transaction(trans, root);
 
 	if (source_dir_set) {
@@ -1701,6 +1742,40 @@ raid_groups:
 
 		ret = make_image(source_dir, root, fd);
 		BUG_ON(ret);
+	}
+
+	if (!quiet) {
+		printf("BTRFS filesystem summary:\n");
+		printf("  Label:\t\t%s\n", label);
+		printf("  UUID:\t\t\t%s\n", fs_uuid);
+		printf("\n");
+
+		printf("  Node size:\t\t%u\n", nodesize);
+		printf("  Leaf size:\t\t%u\n", leafsize);
+		printf("  Sector size:\t\t%u\n", sectorsize);
+		printf("  Initial chunks:\n");
+		if (allocation.data)
+			printf("    Data:\t\t%s\n",
+				pretty_size(allocation.data));
+		if (allocation.metadata)
+			printf("    Metadata:\t\t%s\n",
+				pretty_size(allocation.metadata));
+		if (allocation.mixed)
+			printf("    Data+Metadata:\t%s\n",
+				pretty_size(allocation.mixed));
+		printf("    System:\t\t%s\n",
+			pretty_size(allocation.system));
+		printf("  Metadata profile:\t%s\n",
+			btrfs_group_profile_str(metadata_profile));
+		printf("  Data profile:\t\t%s\n",
+			btrfs_group_profile_str(data_profile));
+		printf("  Mixed mode:\t\t%s\n", mixed ? "YES" : "NO");
+		printf("  SSD detected:\t\t%s\n", ssd ? "YES" : "NO");
+		printf("  Incompat features:\t");
+		print_fs_features(features);
+		printf("\n");
+
+		list_all_devices(root);
 	}
 
 	ret = close_ctree(root);
