@@ -201,7 +201,7 @@ int make_btrfs(int fd, const char *device, const char *label, char *fs_uuid,
 	memset(&super, 0, sizeof(super));
 
 	num_bytes = (num_bytes / sectorsize) * sectorsize;
-	if (fs_uuid) {
+	if (fs_uuid && *fs_uuid) {
 		if (uuid_parse(fs_uuid, super.fsid) != 0) {
 			fprintf(stderr, "could not parse UUID: %s\n", fs_uuid);
 			ret = -EINVAL;
@@ -214,6 +214,11 @@ int make_btrfs(int fd, const char *device, const char *label, char *fs_uuid,
 		}
 	} else {
 		uuid_generate(super.fsid);
+		/*
+		 * if the fs_uuid is a valid pointer, return the generated uuid
+		 */
+		if (fs_uuid)
+			uuid_unparse(super.fsid, fs_uuid);
 	}
 	uuid_generate(super.dev_item.uuid);
 	uuid_generate(chunk_tree_uuid);
