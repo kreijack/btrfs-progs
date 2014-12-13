@@ -608,7 +608,7 @@ static int zero_dev_clamped(int fd, off_t start, ssize_t len, u64 dev_size)
 int btrfs_add_to_fsid(struct btrfs_trans_handle *trans,
 		      struct btrfs_root *root, int fd, char *path,
 		      u64 block_count, u32 io_width, u32 io_align,
-		      u32 sectorsize)
+		      u32 sectorsize, int verbose)
 {
 	struct btrfs_super_block *disk_super;
 	struct btrfs_super_block *super = root->fs_info->super_copy;
@@ -657,8 +657,9 @@ int btrfs_add_to_fsid(struct btrfs_trans_handle *trans,
 
 	memcpy(disk_super, super, sizeof(*disk_super));
 
-	printf("adding device %s id %llu\n", path,
-	       (unsigned long long)device->devid);
+	if (verbose)
+		printf("adding device %s id %llu\n", path,
+		       (unsigned long long)device->devid);
 
 	btrfs_set_super_bytenr(disk_super, BTRFS_SUPER_INFO_OFFSET);
 	btrfs_set_stack_device_id(dev_item, device->devid);

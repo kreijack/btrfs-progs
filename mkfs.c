@@ -1635,7 +1635,8 @@ int main(int ac, char **av)
 		mixed = old_mixed;
 
 		ret = btrfs_add_to_fsid(trans, root, fd, file, dev_block_count,
-					sectorsize, sectorsize, sectorsize);
+					sectorsize, sectorsize, sectorsize,
+					verbose);
 		BUG_ON(ret);
 		btrfs_register_one_device(file);
 	}
