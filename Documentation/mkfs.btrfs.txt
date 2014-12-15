@@ -21,9 +21,11 @@ $$[-s|--sectorsize <sectorsize>]$$
 $$[-r|--rootdir <rootdir>]$$
 $$[-K|--nodiscard]$$
 $$[-O|--features <feature1>[,<feature2>...]]$$
+$$[-q|--quiet]$$
 $$[-U|--uuid <UUID>]$$
 $$[-h]$$
 $$[-V|--version]$$
+$$[-v|--verbose]$$
 $$<device> [<device>...]$$
 
 DESCRIPTION
@@ -120,6 +122,12 @@ the system.
 
 -V|--version::
 Print the *mkfs.btrfs* version and exit.
+
+-v|--verbose::
+Increase the verbosity of the command.
+
+-q|--quiet::
+Print only the errors.
 
 -h::
 Print help.
